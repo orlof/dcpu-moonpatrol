@@ -1,0 +1,182 @@
+;----------------------------------------------------------------
+:detect_hardware
+;----------------------------------------------------------------
+    hwn i
+:detect_hardware__loop
+    ife i, 0
+       set pc, pop
+    sub i, 1
+    hwq i
+    ife a, 0xf615
+        ife b, 0x7349
+            set [monitor], i
+    ife a, 0x7406
+        ife b, 0x30cf
+            set [keyboard], i
+    ife a, 0xb402
+        ife b, 0x12d0
+            set [clock], i
+    ife a, 0x24c5
+        ife b, 0x4fd5
+            set [floppy], i
+    ife a, 0x9088
+        ife b, 0xe023
+            set [hic], i
+    ife a, 0x90a5
+        ife b, 0xd005
+            set [rci], i
+    set pc, detect_hardware__loop
+
+;----------------------------------------------------------------
+; RANDOM NUMBER GENERATORS
+;----------------------------------------------------------------
+:rnd_lfsr_seed     dat 0xbe8c,0x8000 ; 1st is anything but zero. 2nd should be 8000 or 0000
+:rnd_lfsr_poly     dat 0xb400
+
+:rnd ; return pseudo-random 0000-FFFF in x
+    set x, [rnd_lfsr_seed]
+    shr x, 1
+    bor x, [rnd_lfsr_seed + 1]
+    set [rnd_lfsr_seed + 1], ex
+    ifn ex, 0
+        xor x, [rnd_lfsr_poly]
+    set [rnd_lfsr_seed], x
+    set pc, pop
+
+;----------------------------------------------------------------
+:delay
+;----------------------------------------------------------------
+    set i, [sp + 1]
+    set [sp], pop
+
+:delay_loop
+    ife i, 0
+        set pc, pop
+    std pc, delay_loop
+
+;----------------------------------------------------------------
+:swap_buffer
+;----------------------------------------------------------------
+    set a, 0
+    set b, [videoram_w]
+    hwi [monitor]
+
+    set [videoram_w], [videoram_r]
+    set [videoram_r], b
+
+    set i, [videoram_w]
+    set j, [videoram_r]
+
+    set a, swap_buffer_loop
+    add b, 384
+
+:swap_buffer_loop
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    sti [i], [j]
+    ifn j, b
+        set pc, a
+
+    ife [videoram_addr], -1
+        set pc, pop
+
+    set a, [videoram_addr]
+    add a, [videoram_w]
+    set [a], [videoram_char]
+    set [videoram_addr], -1
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:press_any_key
+;----------------------------------------------------------------
+    set a, 0
+    hwi [keyboard]
+
+    set a, 1
+:press_any_key_loop
+    hwi [keyboard]
+
+    ife c, 0
+        set pc, press_any_key_loop
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:input_handler
+; [sp+1] table
+;----------------------------------------------------------------
+    set x, [sp+1]
+    ife [x], 0
+        set pc, input_handler_end
+
+    set a, 2
+    set b, [x]
+    hwi [keyboard]
+
+    ife c, 1
+        jsr [x+1]
+
+    add [sp+1], 2
+    set pc, input_handler
+
+:input_handler_end
+    set [sp], pop
+    set pc, pop
+
+;----------------------------------------------------------------
+:print_str
+;----------------------------------------------------------------
+    set i, [sp + 2]
+    mul i, 32
+    add i, [sp + 3]
+    add i, [videoram_w]
+    add i, 4
+
+    set j, [sp + 1]
+:print_str_loop
+    ife [j], 0
+        set pc, print_end
+    sti [i], [j]
+    set pc, print_str_loop
+
+;----------------------------------------------------------------
+:print_word
+;----------------------------------------------------------------
+    set i, [sp + 2]
+    mul i, 32
+    add i, [sp + 3]
+    add i, [videoram_w]
+    add i, 4
+
+    set c, 1
+:print_word_loop
+    set b, [sp + 1]
+    div b, c
+    mod b, 10
+    add b, NUMBER_CHAR_0
+    bor b, 0xf000
+    std [i], b
+
+    ife c, 10000
+        set pc, print_end
+
+    mul c, 10
+    set pc, print_word_loop
+
+:print_end
+    set [sp], pop
+    set [sp], pop
+    set [sp], pop
+    set pc, pop
+
+:videoram_0
+    #fill 0 384
+
+:videoram_1
+    #fill 0 384

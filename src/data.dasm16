@@ -1,0 +1,40 @@
+;----------------------------------------------------------------
+; GLOBAL HW VARIABLES
+;----------------------------------------------------------------
+:keyboard           DAT 0xffff
+:monitor            DAT 0xffff
+:clock              DAT 0xffff
+:floppy             DAT 0xffff
+:hic                DAT 0xffff
+:rci                DAT 0xffff
+
+:videoram_w         DAT 0x0000
+:videoram_r         DAT 0x0000
+
+:videoram_addr      DAT 0
+:videoram_char      DAT 0
+
+:position           DAT 0
+:vehicle_x          DAT 12
+
+:jump               DAT 0
+:jump_table         DAT 0, 1, 2, 2, 3, 3, 3, 2, 2, 1
+
+:ammo_x             DAT 0
+:ammo_y             DAT 0
+
+:ufo_x              DAT 0
+:ufo_y              DAT 0
+:ufo_dx             DAT -1
+:ufo_state          DAT 0
+
+:score              DAT 0
+:game_delay         DAT 400
+
+:keyboard_handlers
+    dat 0x83, action_fast
+    dat 0x82, action_slow
+    dat 0x80, action_jump
+    dat  ' ', action_shoot
+    dat  'q', action_quit
+    dat 0

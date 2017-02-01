@@ -1,0 +1,562 @@
+    jsr detect_hardware
+
+:start
+    set [rnd_lfsr_seed], 0xbe8c
+    set [rnd_lfsr_seed+1], 0x8000 ; 1st is anything but zero. 2nd should be 8000 or 0000
+    set [rnd_lfsr_poly], 0xb400
+    set [position], 0
+    set [vehicle_x], 12
+    set [jump], 0
+    set [videoram_r], videoram_0
+    set [videoram_w], videoram_1
+    set [videoram_addr], -1
+    set [videoram_char], 0
+    set [ammo_x], -1
+    set [ammo_y], -1
+    set [ufo_x], 128
+    set [ufo_y], 1
+    set [ufo_dx], -1
+    set [ufo_state], -1
+    set [score], 0
+    set [game_delay], 1000
+
+    set i, videoram_0
+    jsr init_videoram
+
+    set i, videoram_1
+    jsr init_videoram
+
+    set a, 0
+    set b, moonpatrol_videoram
+    hwi [monitor]
+
+    set a, 1
+    set b, moonpatrol_fontram
+    hwi [monitor]
+
+    set a, 2
+    set b, moonpatrol_paletteram
+    hwi [monitor]
+
+    jsr press_any_key
+    ife c, 'q'
+        ifn sp, 0
+            set pc, exit_2
+
+    set a, 0
+    set b, videoram_0
+    hwi [monitor]
+
+    set a, 1
+    set b, font_ram_0
+    hwi [monitor]
+
+    set a, 2
+    set b, lem_default_palette
+    hwi [monitor]
+
+;----------------------------------------------------------------
+:main_loop
+;----------------------------------------------------------------
+    set push, keyboard_handlers
+    jsr input_handler
+
+    jsr ground__update
+    jsr scene__update
+    jsr vehicle_update
+    jsr ufo_update
+
+    jsr print_score
+
+    jsr ammo_draw
+
+    jsr swap_buffer
+
+    jsr detect_collision
+    jsr detect_ammo_collision
+
+    set x, [position]
+    add x, 1
+    set [position], x
+
+    mod x, 50
+    ife x, 0
+        ifn [game_delay], 0
+            sub [game_delay], 10
+
+    set push, [game_delay]
+    jsr delay
+
+    set pc, main_loop
+
+;----------------------------------------------------------------
+:ufo_update
+;----------------------------------------------------------------
+    ifl [ufo_x], 8
+        mli [ufo_dx], -1
+    ifg [ufo_x], 112
+        ifa [ufo_dx], 0
+            mli [ufo_dx], -1
+
+    ifn [ufo_state], -1
+        set pc, ufo_explosion
+
+    add [ufo_x], [ufo_dx]
+
+    set x, [ufo_x]
+    div x, 4
+
+    set i, [ufo_y]
+    mul i, 32
+    add i, [videoram_w]
+    set a, i
+    add a, 32
+    add i, x
+
+    set j, [ufo_x]
+    mod j, 4
+    mul j, 4
+    add j, UFO_CHAR
+
+    set [i-1], SPACE
+    ifl i, a
+        sti [i], j
+    ifl i, a
+        sti [i], j
+    ifl i, a
+        sti [i], j
+    ifl i, a
+        set [i], SPACE
+
+    set pc, pop
+
+:ufo_explosion
+    ife [ufo_state], 0
+        set pc, ufo_restart
+
+    set x, [ufo_x]
+    div x, 4
+
+    set i, [ufo_y]
+    mul i, 32
+    add i, [videoram_w]
+    set a, i
+    add a, 32
+    add i, x
+
+    set c, SPACE_EXPLOSION_1
+    ifc [ufo_state], 8
+        set c, SPACE_EXPLOSION_2
+    ife [ufo_state], 1
+        set c, SPACE
+
+    set [i-1], SPACE
+    ifl i, a
+        sti [i], c
+    ifl i, a
+        sti [i], c
+    ifl i, a
+        sti [i], c
+    ifl i, a
+        set [i], SPACE
+
+    sub [ufo_state], 1
+
+    set pc, pop
+
+:ufo_restart
+    set [ufo_x], 128
+    jsr rnd
+    and x, 3
+    add x, 1
+    set [ufo_y], x
+    set [ufo_state], -1
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:ammo_draw
+;----------------------------------------------------------------
+    ifu [ammo_y], 0
+        set pc, pop
+
+    ; calculate videoram addr
+    set a, [ammo_y]
+    div a, 8
+    mul a, 32
+    set b, [ammo_x]
+    div b, 4
+    add a, b
+
+    ; store addr and original content
+    set [videoram_addr], a
+
+    add a, [videoram_w]
+    set [videoram_char], [a] ; videoram value
+
+    ; calculate addr for original content font
+    set b, [a]
+    and b, 0x7F
+    mul b, 2
+    add b, font_ram_0
+
+    ; copy original glyph to ammo font for modifying
+    set x, [position]
+    and x, 1
+
+    set c, x
+    mul c, 2
+    add c, AMMO_FONT
+    set [c], [b]
+    set [c+1], [b+1]
+
+    ; replace original char with ammo char
+    set b, [a]
+    and b, 0xff80
+    add x, AMMO_CHAR
+    bor b, x
+    set [a], b
+
+    ; modify ammo glyph
+    set a, [ammo_y]
+    mod a, 8
+    set b, [ammo_x]
+    mod b, 4
+    ifb b, 2
+        add c, 1
+    set x, 0x0100
+    ifb b, 1
+        shr x, 8
+    shl x, a
+    xor [c], x
+
+    sub [ammo_y], 2
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:print_score
+;----------------------------------------------------------------
+    set push, 0
+    set push, 0
+    set push, [position]
+    div [sp], 10
+    add [sp], [score]
+    jsr print_word
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:detect_ammo_collision
+;----------------------------------------------------------------
+    ifu [ammo_y], 0
+        set pc, pop
+
+    ifn [ufo_state], -1
+        set pc, pop
+
+    set y, [ufo_y]
+    mul y, 8
+
+    ifl [ammo_y], y
+        set pc, pop
+
+    add y, 8
+    ifg [ammo_y], y
+        set pc, pop
+
+    set x, [ufo_x]
+    ifl [ammo_x], x
+        set pc, pop
+
+    add x, 8
+    ifg [ammo_x], x
+        set pc, pop
+
+    add [score], 100
+    set [ufo_state], 15
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:detect_collision
+;----------------------------------------------------------------
+    ifn [jump], 0
+        set pc, pop
+
+    set a, 2
+    jsr is_collision
+
+    set a, 5
+    jsr is_collision
+
+    set pc, pop
+
+:is_collision
+    add a, 4
+    add a, [vehicle_x]
+
+    set b, a
+    div a, 4
+    add a, 10 * 32
+
+    add a, [videoram_r]
+
+    set a, [a]
+    and a, 0x007f
+    mul a, 2
+    add a, font_ram_0
+
+    and b, 3
+
+    ifb b, 2
+        add a, 1
+
+    ifb b, 1
+        ifb [a], 0x0001
+            set pc, pop
+
+    ifc b, 1
+        ifb [a], 0x0100
+            set pc, pop
+
+:game_over
+    set a, [vehicle_x]
+    div a, 4
+    add a, 9 * 32
+
+    add a, [videoram_r]
+
+    set b, EXPLOSION_1
+    jsr game_over_explosion
+
+    set b, EXPLOSION_2
+    jsr game_over_explosion
+
+    set b, EXPLOSION_1
+    jsr game_over_explosion
+
+    set b, EXPLOSION_2
+    jsr game_over_explosion
+
+    set b, SCENE_FULL
+    jsr game_over_explosion
+
+    jsr press_any_key
+
+    add sp, 2
+    set pc, start
+
+:game_over_explosion
+    set [a], SCENE_FULL
+    set [a+1], b
+    set [a+2], b
+    set [a+3], b
+    set [a+4], SCENE_FULL
+
+    set push, 10000
+    jsr delay
+
+    set pc, pop
+
+:action_fast
+    ifl [vehicle_x], 108
+        add [vehicle_x], 1
+    set pc, pop
+
+:action_slow
+    ifg [vehicle_x], 4
+        sub [vehicle_x], 1
+    set pc, pop
+
+:action_jump
+    ife [jump], 0
+        set [jump], 9
+    set pc, pop
+
+:action_shoot
+    ifa [ammo_y], -1
+        set pc, pop
+
+    set [ammo_x], [vehicle_x]
+    add [ammo_x], 8
+    set [ammo_y], 70
+    set pc, pop
+
+:action_quit
+    ife sp, 0xfffd
+        set pc, pop
+
+:exit
+    add sp, 3
+
+:exit_2
+    set a, 1
+    set b, 0
+    hwi [monitor]
+
+    set a, 2
+    set b, 0
+    hwi [monitor]
+
+    set a, 0
+    hwi [keyboard]
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:ground__update
+;----------------------------------------------------------------
+    ifc [position], 3
+        set pc, ground__update__advance
+
+    set i, [videoram_w]
+    add i, 10 * 32
+    set a, i
+    add a, 31
+
+:ground__update__loop
+    add [i], 1
+    ifn i, a
+        sti pc, ground__update__loop
+
+    set pc, pop
+
+:ground__update__advance
+    set i, [videoram_w]
+    add i, 10 * 32
+    set j, [videoram_w]
+    add j, 10 * 32 + 1
+    set a, i
+    add a, 30
+
+:ground__update__advance__loop
+    set [i], [j]
+    sub [i], 3
+    ifn i, a
+        sti pc, ground__update__advance__loop
+
+    ; create new ground
+    add a, 1
+
+    ife [a-1], GROUND_OUT
+        set [a], GROUND_EMPTY
+
+    ife [a-1], GROUND_EMPTY
+        set [a], GROUND_IN
+
+    ife [a-1], GROUND_IN
+        set [a], GROUND_FULL
+
+    jsr rnd
+
+    set b, GROUND_FULL
+    ifc x, 7
+        set b, GROUND_OUT
+
+    ife [a-1], GROUND_FULL
+        set [a], b
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:scene__update
+;----------------------------------------------------------------
+    ifb [position], 3
+        set pc, pop
+
+    ifc [position], 0xf
+        set pc, scene__update__advance
+
+    set i, [videoram_w]
+    add i, 7 * 32
+    set a, i
+    add a, 31
+
+:scene__update__loop
+    add [i], 1
+    ifn i, a
+        sti pc, scene__update__loop
+
+    set pc, pop
+
+:scene__update__advance
+    set i, [videoram_w]
+    add i, 7 * 32
+    set j, [videoram_w]
+    add j, 7 * 32 + 1
+    set a, i
+    add a, 30
+
+:scene__update__advance__loop
+    set [i], [j]
+    sub [i], 3
+    ifn i, a
+        sti pc, scene__update__advance__loop
+
+    ; create new ground
+    jsr rnd
+
+    set b, SCENE_IN
+    ifc x, 1
+        set b, SCENE_EMPTY
+
+    ife [a], SCENE_EMPTY
+        set [a+1], b
+
+    ife [a], SCENE_OUT
+        set [a+1], b
+
+    set b, SCENE_OUT
+    ifc x, 1
+        set b, SCENE_FULL
+
+    ife [a], SCENE_IN
+        set [a+1], b
+
+    ife [a], SCENE_FULL
+        set [a+1], b
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:vehicle_update
+;----------------------------------------------------------------
+    set c, [jump]
+    set c, [jump_table + c]
+    mul c, 16
+    add c, 15
+
+    ifg [jump], 0
+        sub [jump], 1
+
+    set i, [vehicle_x]
+    div i, 4
+    add i, 9 * 32
+    add i, [videoram_w]
+
+    set j, [vehicle_x]
+    mod j, 4
+    mul j, 4
+    add j, c
+    bor j, 0xC100
+
+    sti [i], SCENE_FULL
+    sti [i], j
+    sti [i], j
+    sti [i], j
+    sti [i], SCENE_FULL
+
+    set pc, pop
+
+;----------------------------------------------------------------
+:init_videoram
+;----------------------------------------------------------------
+    set j, videoram_init
+
+:init_videoram_loop
+    sti [i], [j]
+    ifn j, videoram_init_end
+        set pc, init_videoram_loop
+
+    set pc, pop

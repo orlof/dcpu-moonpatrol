@@ -1,0 +1,24 @@
+#define SPACE        0x3000
+#define SPACE_EXPLOSION_1 0xc050
+#define SPACE_EXPLOSION_2 0xe051
+
+#define GROUND_EMPTY 0xf800
+#define GROUND_FULL  0x2f08
+#define GROUND_OUT   0x2804
+#define GROUND_IN    0x280c
+
+#define SCENE_EMPTY  0xf000
+#define SCENE_FULL   0x1f08
+#define SCENE_OUT    0x1004
+#define SCENE_IN     0x100c
+
+#define VEHICLE      0xC110
+#define UFO_CHAR     0x3070
+
+#define EXPLOSION_1  0xc150
+#define EXPLOSION_2  0xe151
+
+#define AMMO_FONT    font_ram_0 + 2 * AMMO_CHAR
+#define AMMO_CHAR    0x52
+
+#define NUMBER_CHAR_0 0x60
