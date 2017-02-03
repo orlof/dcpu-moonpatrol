@@ -25,6 +25,9 @@
     ife a, 0x90a5
         ife b, 0xd005
             set [rci], i
+    ife a, 0x0001
+        ife b, 0xC0F0
+            set [speaker], i
     set pc, detect_hardware__loop
 
 ;----------------------------------------------------------------

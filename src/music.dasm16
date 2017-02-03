@@ -1,0 +1,297 @@
+#define C0 16
+#define Cx0 17
+#define D0 18
+#define Dx0 19
+#define E0 21
+#define F0 22
+#define Fx0 23
+#define G0 25
+#define Gx0 26
+#define A0 28
+#define Ax0 29
+#define B0 31
+#define C1 33
+#define Cx1 35
+#define D1 37
+#define Dx1 39
+#define E1 41
+#define F1 44
+#define Fx1 46
+#define G1 49
+#define Gx1 52
+#define A1 55
+#define Ax1 58
+#define B1 62
+#define C2 65
+#define Cx2 69
+#define D2 73
+#define Dx2 78
+#define E2 82
+#define F2 87
+#define Fx2 93
+#define G2 98
+#define Gx2 104
+#define A2 110
+#define Ax2 117
+#define B2 123
+#define C3 131
+#define Cx3 139
+#define D3 147
+#define Dx3 156
+#define E3 165
+#define F3 175
+#define Fx3 185
+#define G3 196
+#define Gx3 208
+#define A3 220
+#define Ax3 233
+#define B3 247
+#define C4 262
+#define Cx4 277
+#define D4 294
+#define Dx4 311
+#define E4 330
+#define F4 349
+#define Fx4 370
+#define G4 392
+#define Gx4 415
+#define A4 440
+#define Ax4 466
+#define B4 494
+#define C5 523
+#define Cx5 554
+#define D5 587
+#define Dx5 622
+#define E5 659
+#define F5 698
+#define Fx5 740
+#define G5 784
+#define Gx5 831
+#define A5 880
+#define Ax5 932
+#define B5 988
+#define C6 1047
+#define Cx6 1109
+#define D6 1175
+#define Dx6 1245
+#define E6 1319
+#define F6 1397
+#define Fx6 1480
+#define G6 1568
+#define Gx6 1661
+#define A6 1760
+#define Ax6 1865
+#define B6 1976
+#define C7 2093
+#define Cx7 2217
+#define D7 2349
+#define Dx7 2489
+#define E7 2637
+#define F7 2794
+#define Fx7 2960
+#define G7 3136
+#define Gx7 3322
+#define A7 3520
+#define Ax7 3729
+#define B7 3951
+#define C8 4186
+#define Cx8 4435
+#define D8 4699
+#define Dx8 4978
+#define E8 5274
+#define F8 5588
+#define Fx8 5920
+#define G8 6272
+#define Gx8 6645
+#define A8 7040
+#define Ax8 7459
+#define B8 7902
+
+:play
+    ife [speaker], 0xffff
+        set pc, silence
+
+    set a, 0
+    hwi [keyboard]
+
+    set x, moon_patrol_theme
+    set y, 0
+
+:play_loop
+    set a, 0
+    set b, [x]
+    shl b, y
+    hwi [speaker]
+
+    set a, 1
+    shl b, 1
+    hwi [speaker]
+
+    set push, [x+1]
+    mul [sp], 2000
+    jsr delay
+
+    ; key
+    set a, 1
+    hwi [keyboard]
+
+    ifn c, 0
+        set pc, play_stop
+
+    ife [x], 0
+        set pc, play_again
+
+    add x, 2
+    set pc, play_loop
+
+:play_again
+    set x, moon_patrol_theme
+    add y, 1
+    ife y, 3
+        set y, 0
+
+    set pc, play_loop
+
+:play_stop
+    set a, 0
+    set b, 0
+    hwi [speaker]
+
+    set a, 1
+    hwi [speaker]
+
+    set pc, pop
+
+:silence
+    jsr press_any_key
+    set pc, pop
+
+
+:moon_patrol_theme
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Cx2, 2
+    dat Dx2, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Gx1, 1
+    dat A1, 1
+    dat Ax1, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Cx2, 2
+    dat Dx2, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Gx1, 1
+    dat A1, 1
+    dat Ax1, 2
+
+    dat Gx1, 2
+    dat Gx1, 2
+    dat Gx2, 2
+    dat Gx2, 1
+    dat Fx2, 2
+    dat Fx2, 1
+    dat Dx2, 2
+    dat Fx2, 2
+    dat Gx2, 2
+
+    dat Gx1, 2
+    dat Gx1, 2
+    dat Gx2, 2
+    dat Gx2, 1
+    dat Fx2, 2
+    dat Fx2, 1
+    dat Dx2, 2
+    dat Cx2, 1
+    dat D2, 1
+    dat Dx2, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Cx2, 2
+    dat Dx2, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Gx1, 1
+    dat A1, 1
+    dat Ax1, 2
+    dat Ax1, 2
+    dat Ax1, 2
+    dat Ax2, 2
+    dat Ax2, 1
+    dat Gx2, 2
+    dat Gx2, 1
+    dat F2, 2
+    dat Gx2, 2
+    dat Ax2, 2
+
+    dat Gx1, 2
+    dat Gx1, 2
+    dat Gx2, 2
+    dat Gx2, 1
+    dat Fx2, 2
+    dat Fx2, 1
+    dat Dx2, 2
+    dat Fx2, 2
+    dat Gx2, 2
+
+    dat Dx1, 2
+    dat Dx1, 2
+    dat Dx2, 2
+    dat Dx2, 1
+    dat Cx2, 2
+    dat Cx2, 1
+    dat Ax1, 2
+    dat Cx2, 2
+    dat Dx2, 2
+
+    dat Dx1, 1
+    dat Dx1, 2
+    dat Dx1, 1
+    dat G1, 1
+    dat G1, 2
+    dat G1, 1
+    dat Gx1, 1
+    dat Gx1, 2
+    dat Gx1, 1
+
+    dat A1, 2
+    dat Ax1, 2
+
+    dat 0, 0

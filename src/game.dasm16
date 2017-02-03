@@ -38,7 +38,8 @@
     set b, moonpatrol_paletteram
     hwi [monitor]
 
-    jsr press_any_key
+    jsr play
+
     ife c, 'q'
         ifn sp, 0
             set pc, exit_2

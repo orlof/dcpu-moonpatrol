@@ -7,6 +7,7 @@
 :floppy             DAT 0xffff
 :hic                DAT 0xffff
 :rci                DAT 0xffff
+:speaker            DAT 0xffff
 
 :videoram_w         DAT 0x0000
 :videoram_r         DAT 0x0000
