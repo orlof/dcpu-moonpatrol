@@ -166,6 +166,30 @@
     jsr press_any_key
     set pc, pop
 
+:laser_snd
+    dat 500, 2
+    dat 425, 1
+    dat 350, 1
+    dat 0, 0
+
+:explosion_snd
+    dat 270, 1
+    dat 240, 1
+    dat 210, 1
+    dat 230, 1
+    dat 200, 1
+    dat 0, 0
+
+:game_over_snd
+    dat 400, 2
+    dat 300, 2
+    dat 200, 2
+    dat 300, 2
+    dat 400, 2
+    dat 0, 0
+
+:ufo
+    dat 100, 2, 400, 2, 300, 2, 150, 2, 450, 2, 250, 2, 200, 2, 0, 0
 
 :moon_patrol_theme
     dat Dx1, 2

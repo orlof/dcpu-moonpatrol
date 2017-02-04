@@ -32,6 +32,11 @@
 :score              DAT 0
 :game_delay         DAT 400
 
+:target_engine_snd dat 0
+:engine_snd dat 0
+:snd_effect dat 0
+:snd_phase dat 0
+
 :keyboard_handlers
     dat 0x83, action_fast
     dat 0x82, action_slow
