@@ -1,5 +1,10 @@
     jsr detect_hardware
 
+    ; set keyboard to generic keycode mode
+    set a, 4
+    set b, 1
+    hwi [keyboard]
+
 :start
     set [rnd_lfsr_seed], 0xbe8c
     set [rnd_lfsr_seed+1], 0x8000 ; 1st is anything but zero. 2nd should be 8000 or 0000
