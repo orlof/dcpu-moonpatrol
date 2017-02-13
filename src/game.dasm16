@@ -31,6 +31,24 @@
     set i, videoram_1
     jsr init_videoram
 
+    ife [pixie], 0xffff
+        set pc, start_lem
+
+    set a, 0x10
+    set b, 4
+    hwi [pixie]
+
+    set a, 0
+    set b, bitplane0
+    hwi [pixie]
+
+    set a, 2
+    set b, palette
+    hwi [pixie]
+
+    set pc, start_common
+
+:start_lem
     set a, 0
     set b, moonpatrol_videoram
     hwi [monitor]
@@ -43,12 +61,21 @@
     set b, moonpatrol_paletteram
     hwi [monitor]
 
+:start_common
     jsr play
 
     ife c, 'q'
         ifn sp, 0
             set pc, exit_2
 
+    ife [pixie], 0xffff
+        set pc, skip_screen_mode
+
+    set a, 0x10
+    set b, 0
+    hwi [pixie]
+
+:skip_screen_mode
     set a, 0
     set b, videoram_0
     hwi [monitor]
