@@ -62,6 +62,15 @@
     hwi [monitor]
 
 :start_common
+    set push, 5000
+    jsr delay
+
+    set a, 1
+    hwi [keyboard]
+
+    ifn c, 0
+        set pc, start_common
+
     jsr play
 
     ife c, 'q'

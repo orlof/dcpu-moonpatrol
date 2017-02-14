@@ -124,11 +124,18 @@
     hwi [speaker]
 
     set a, 1
-    shl b, 1
+    ; shl b, 1
     hwi [speaker]
 
     set push, [x+1]
-    mul [sp], 2000
+    mul [sp], 250
+    jsr delay
+
+    set b, 0
+    hwi [speaker]
+
+    set push, [x+1]
+    mul [sp], 1950
     jsr delay
 
     ; key
@@ -139,7 +146,17 @@
         set pc, play_stop
 
     ife [x], 0
-        set pc, play_again
+        ife [x+1], 0
+            set pc, play_again
+
+    set a, 0
+    set b, 0
+    hwi [speaker]
+    set a, 1
+    hwi [speaker]
+
+    set push, 200
+        jsr delay
 
     add x, 2
     set pc, play_loop
@@ -318,4 +335,5 @@
     dat A1, 2
     dat Ax1, 2
 
+    ; dat 0, 1
     dat 0, 0
